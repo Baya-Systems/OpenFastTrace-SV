@@ -1,4 +1,4 @@
-package org.example.svimporter.model;
+package org.bayasystems.svimporter.model;
 
 import org.itsallcode.openfasttrace.api.core.Location;
 import org.itsallcode.openfasttrace.api.core.SpecificationItemId;
