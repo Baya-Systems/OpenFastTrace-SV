@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.itsallcode.openfasttrace:openfasttrace-api:1.0.0'
+    implementation 'org.itsallcode.openfasttrace:openfasttrace:4.1.0'
     testImplementation 'junit:junit:4.13.2'
 }
 
