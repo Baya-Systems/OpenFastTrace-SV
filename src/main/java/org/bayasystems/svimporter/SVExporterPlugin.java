@@ -1,4 +1,4 @@
-package org.example.svimporter;
+package org.bayasystems.svimporter;
 
 import org.itsallcode.openfasttrace.api.core.Exporter;
 import org.itsallcode.openfasttrace.api.core.ExporterFactory;

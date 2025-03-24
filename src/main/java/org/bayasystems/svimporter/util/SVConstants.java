@@ -1,4 +1,4 @@
-package org.example.svimporter.util;
+package org.bayasystems.svimporter.util;
 
 public class SVConstants {
     public static final String DEFAULT_ARTIFACT_TYPE = "req";
