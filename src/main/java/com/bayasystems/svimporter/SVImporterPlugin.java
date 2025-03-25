@@ -1,5 +1,6 @@
 package com.bayasystems.svimporter;
 
+import java.util.Objects;
 import java.util.logging.Logger;
 
 import org.itsallcode.openfasttrace.api.importer.*;
@@ -34,12 +35,7 @@ public class SVImporterPlugin extends ImporterFactory {
         }
         LOG.finest(() -> "Creating importer for file " + file);
 
-        return () -> runImporter(file, listener);
+        return new SVImporter(Objects.requireNonNull(file), Objects.requireNonNull(listener));
     }
 
-    private void runImporter(final InputFile file, final ImportEventListener listener)
-    {
-        final Importer importer = createImporter(file, listener);
-        importer.runImport();
-    }
 }
