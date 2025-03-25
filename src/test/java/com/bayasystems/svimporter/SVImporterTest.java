@@ -1,6 +1,9 @@
 package com.bayasystems.svimporter;
 
 import org.junit.jupiter.api.Test;
+
+import com.bayasystems.svimporter.SVImporter.ParsedItem;
+
 import org.itsallcode.openfasttrace.api.core.SpecificationItemId;
 import org.itsallcode.openfasttrace.api.importer.ImportEventListener;
 import org.itsallcode.openfasttrace.api.importer.input.RealFileInput;
@@ -18,8 +21,9 @@ public class SVImporterTest {
         // Test processing a line with a requirement - this doesn't match your pattern
         // The pattern requires specific format: [type->type~name~digits]
         String reqLine = "// [req->dsn~feature-id~1] This is a requirement";
-        SpecificationItemId id = SVImporter.processLine(reqLine);
-        assertNotNull(id, "Should recognize a valid requirement");
+        ParsedItem pi = SVImporter.processLine(reqLine);
+        assertNotNull(pi, "Should recognize a valid requirement");
+        SpecificationItemId id = pi.id();
         assertEquals("dsn", id.getArtifactType(), "Should extract the correct artifact type");
         assertEquals("feature-id", id.getName(), "Should extract the correct requirement name");
         assertEquals(1, id.getRevision(), "Should extract the correct revision");
@@ -60,9 +64,10 @@ public class SVImporterTest {
         // Verify that the importer has processed the file properly
 
         // verify that the addCoveredId method was called once with this id
-        SpecificationItemId id = SpecificationItemId.createId("req", "id", 1);
-        verify(listener, times(1)).addCoveredId(id);
+        SpecificationItemId id = SpecificationItemId.createId("req", "id", 1);        
+        verify(listener, times(1)).setId(id);
 
-        // TODO: support other tag types?
+        SpecificationItemId c_id = SpecificationItemId.createId("dsn", "id", 1);
+        verify(listener, times(1)).addCoveredId(c_id);
     }
 }
