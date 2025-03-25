@@ -82,10 +82,10 @@ public class SVImporter implements Importer {
         // needed-types is everything after '<<'
         // specification-object-id is everything between '->' and '<<'
         final String[] parts = body.split("->");
+        if (parts.length == 1)
+            return null; // ignore // [] without ->
         if (parts.length != 2) {
-            // throw IllegalArgumentException("Invalid tag: " + body + "; must have one '->'
-            // separator");
-            return null;
+            throw new IllegalArgumentException("Invalid tag: " + body + "; must have one '->' separator");
         }
 
         final String covering_artifact = parts[0].trim();
