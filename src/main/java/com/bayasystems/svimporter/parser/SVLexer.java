@@ -1,4 +1,4 @@
-package org.bayasystems.svimporter.parser;
+package com.bayasystems.svimporter.parser;
 
 import java.util.ArrayList;
 import java.util.List;

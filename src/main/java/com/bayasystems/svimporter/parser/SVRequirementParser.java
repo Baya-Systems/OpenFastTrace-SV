@@ -1,9 +1,9 @@
-package org.bayasystems.svimporter.parser;
+package com.bayasystems.svimporter.parser;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.bayasystems.svimporter.model.SVSpecificationItem;
+import com.bayasystems.svimporter.model.SVSpecificationItem;
 import org.itsallcode.openfasttrace.api.core.*;
 
 public class SVRequirementParser {

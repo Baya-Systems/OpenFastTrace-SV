@@ -1,4 +1,4 @@
-package org.bayasystems.svimporter.model;
+package com.bayasystems.svimporter.model;
 
 public enum SVArtifactType {
     REQUIREMENT("req"),
