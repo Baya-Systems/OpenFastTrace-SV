@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -14,6 +15,9 @@ import org.itsallcode.openfasttrace.api.importer.Importer;
 import org.itsallcode.openfasttrace.api.importer.input.InputFile;
 
 public class SVImporter implements Importer {
+
+    private static final Logger LOG = Logger
+            .getLogger(SVImporter.class.getName());
 
     private final InputFile file;
     private final String content;
@@ -127,6 +131,7 @@ public class SVImporter implements Importer {
         if (item == null) {
             return;
         }
+        logItem(lineNumber, item);
         listener.beginSpecificationItem();
         listener.setId(item.generated_id);
         listener.addCoveredId(item.covered_id);
@@ -144,6 +149,17 @@ public class SVImporter implements Importer {
             listener.appendDescription(item.description);
         }
         listener.endSpecificationItem();
+    }
+
+    private void logItem(final int lineNumber, final ParsedItem item) {
+        if (item.needed_types.length == 0) {
+            LOG.finest(() -> "File " + this.file + ":" + lineNumber + ": found '" + item.generated_id
+                    + "' covering id '" + item.covered_id);
+        } else {
+            LOG.finest(() -> "File " + this.file + ":" + lineNumber + ": found '" + item.generated_id
+                    + "' covering id '" + item.covered_id + "', needs artifact types "
+                    + item.needed_types);
+        }
     }
 
     private void importStream(Stream<String> lines) {
