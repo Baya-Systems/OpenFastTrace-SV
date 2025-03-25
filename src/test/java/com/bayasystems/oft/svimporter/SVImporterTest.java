@@ -23,7 +23,11 @@ public class SVImporterTest {
         String reqLine = "// [req->dsn~feature-id~1] This is a requirement";
         ParsedItem pi = SVImporter.processLine(reqLine);
         assertNotNull(pi, "Should recognize a valid requirement");
-        SpecificationItemId id = pi.id();
+        SpecificationItemId gid = pi.generated_id();
+        assertEquals("req", gid.getArtifactType(), "Should extract the correct artifact type");
+        assertNotNull(gid.getName(), "Should have some valid name for the generated SpecificationItemId");
+        assertEquals(-1, gid.getRevision(), "Should extract the correct revision");
+        SpecificationItemId id = pi.covered_id();
         assertEquals("dsn", id.getArtifactType(), "Should extract the correct artifact type");
         assertEquals("feature-id", id.getName(), "Should extract the correct requirement name");
         assertEquals(1, id.getRevision(), "Should extract the correct revision");
@@ -64,10 +68,10 @@ public class SVImporterTest {
         // Verify that the importer has processed the file properly
 
         // verify that the addCoveredId method was called once with this id
-        SpecificationItemId id = SpecificationItemId.createId("req", "id", 1);        
+        SpecificationItemId id = SpecificationItemId.createId("dsn", "id", -1);        
         verify(listener, times(1)).setId(id);
 
-        SpecificationItemId c_id = SpecificationItemId.createId("dsn", "id", 1);
+        SpecificationItemId c_id = SpecificationItemId.createId("req", "id", 1);
         verify(listener, times(1)).addCoveredId(c_id);
     }
 }
