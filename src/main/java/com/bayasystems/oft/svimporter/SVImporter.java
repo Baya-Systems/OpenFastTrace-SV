@@ -72,9 +72,8 @@ public class SVImporter implements Importer {
             return null;
         final String body = reqMatcher.group(1);
         final String titleAndDesc = reqMatcher.group(2);
-
         // body is of the form
-        // <covered-artifact-type> ['~' <name> '~' <revision>] '->'
+        // <covered-artifact-type> ['~' [<name>] '~' <revision>] '->'
         // <specification-object-id> ['<<' <list-of-needed-artifact-types>]
 
         // 1. break body into components
