@@ -53,11 +53,11 @@ public class SVImporter implements Importer {
         // Parse the line and create a new SVSpecificationItem
         final Matcher reqMatcher = REQ_PATTERN.matcher(line);
         if (reqMatcher.matches()) {
-            final String artifactType = reqMatcher.group(1);
-            final String name = reqMatcher.group(2);
-            final int revision = Integer.parseInt(reqMatcher.group(3));
+            final String artifactType = reqMatcher.group(2);
+            final String name = reqMatcher.group(3);
+            final int revision = Integer.parseInt(reqMatcher.group(4));
             // final String titleAndDesc = reqMatcher.group(4);
-            return SpecificationItemId.createId(name, artifactType, revision);
+            return SpecificationItemId.createId(artifactType, name, revision);
         }
         return null;
     }
