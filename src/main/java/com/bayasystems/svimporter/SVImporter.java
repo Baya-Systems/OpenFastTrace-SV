@@ -19,9 +19,12 @@ public class SVImporter implements Importer {
     private final String content;
     private final ImportEventListener listener;
 
-    private static final Pattern REQ_PATTERN = Pattern
+    private static final Pattern CONTEXT_PATTERN = Pattern
             .compile(
                     "\\s*//\\s*\\[([^]]*)\\]\\s*(.*?)$");
+
+    // <covered-artifact-type> ['~' <name> '~' <revision>] '->'
+    // <specification-object-id> ['<<' <list-of-needed-artifact-types>]
 
     private static final Pattern TITLE_DESCRIPTION_PATTERN = Pattern.compile("([^:]+):\\s*(.*)");
 
@@ -49,26 +52,79 @@ public class SVImporter implements Importer {
         this.listener = Objects.requireNonNull(listener);
     }
 
-    record ParsedItem(SpecificationItemId id, String title, String description) {
+    record ParsedItem(SpecificationItemId covered_id, SpecificationItemId id, String[] needed_types, String title,
+            String description) {
+        public ParsedItem {
+            Objects.requireNonNull(covered_id, "Covered item ID must not be null");
+            Objects.requireNonNull(id, "Specification item ID must not be null");
+        }
     }
 
     static public ParsedItem processLine(String line) {
         // Parse the line and create a new SVSpecificationItem
-        final Matcher reqMatcher = REQ_PATTERN.matcher(line);
-        if (reqMatcher.matches()) {
-            final String body = reqMatcher.group(1);
-            final String titleAndDesc = reqMatcher.group(2); 
-            SpecificationItemId si = SpecificationItemId.parseId(body);
-            final Matcher titleDescMatcher = TITLE_DESCRIPTION_PATTERN.matcher(titleAndDesc);
-            if (titleDescMatcher.matches()) {
-                final String title = titleDescMatcher.group(1);
-                final String description = titleDescMatcher.group(2);
-                return new ParsedItem(si, title, description);
-            } else {
-                return new ParsedItem(si, null, titleAndDesc);
-            }
+        final Matcher reqMatcher = CONTEXT_PATTERN.matcher(line);
+        if (!reqMatcher.matches())
+            return null;
+        final String body = reqMatcher.group(1);
+        final String titleAndDesc = reqMatcher.group(2);
+
+        // body is of the form
+        // <covered-artifact-type> ['~' <name> '~' <revision>] '->'
+        // <specification-object-id> ['<<' <list-of-needed-artifact-types>]
+
+        // 1. break body into components
+        // covered-artfact is everything before '->'
+        // needed-types is everything after '<<'
+        // specification-object-id is everything between '->' and '<<'
+        final String[] parts = body.split("->");
+        if (parts.length != 2) {
+            // throw IllegalArgumentException("Invalid tag: " + body + "; must have one '->'
+            // separator");
+            return null;
         }
-        return null;
+
+        final String covered_artifact = parts[0].trim();
+        final String[] parts2 = parts[1].split("<<");
+        String spec_object = null;
+        String[] needed_types = null;
+
+        if (parts2.length == 1) {
+            spec_object = parts[1].trim();
+            needed_types = new String[0];
+        } else if (parts2.length == 2) {
+            spec_object = parts2[0].trim();
+            needed_types = parts2[1].split(",");
+        }
+
+        // 2. parse components
+        final SpecificationItemId specificationId = SpecificationItemId.parseId(spec_object);
+
+        final String[] ca_parts = covered_artifact.split("~");
+        SpecificationItemId coveredId = null;
+        if (ca_parts.length == 1) {
+            coveredId = SpecificationItemId.createId(ca_parts[0], specificationId.getName(),
+                    specificationId.getRevision());
+        } else if (ca_parts.length == 2) {
+            coveredId = SpecificationItemId.createId(ca_parts[0], ca_parts[1], specificationId.getRevision());
+        } else if (ca_parts.length == 3) {
+            coveredId = SpecificationItemId.createId(ca_parts[1], ca_parts[0], Integer.parseInt(ca_parts[2]));
+        } else {
+            // throw IllegalArgumentException("Invalid covered artifact: " +
+            // covered_artifact + "; must have one '~' separator");
+            return null;
+        }
+
+        final Matcher titleDescMatcher = TITLE_DESCRIPTION_PATTERN.matcher(titleAndDesc);
+        String title = null;
+        String description = null;
+        if (titleDescMatcher.matches()) {
+            title = titleDescMatcher.group(1);
+            description = titleDescMatcher.group(2);
+        } else {
+            title = titleAndDesc;
+        }
+
+        return new ParsedItem(coveredId, specificationId, needed_types, title, description);
     }
 
     private void emitParsedItem(final ParsedItem item, int lineNumber) {
@@ -77,6 +133,9 @@ public class SVImporter implements Importer {
         }
         listener.beginSpecificationItem();
         listener.setId(item.id);
+        listener.addCoveredId(item.covered_id);
+        for (String c : item.needed_types)
+            listener.addNeededArtifactType(c);
         if (file != null) {
             listener.setLocation(file.getPath(), lineNumber);
         } else {
@@ -92,7 +151,7 @@ public class SVImporter implements Importer {
     }
 
     private void importStream(Stream<String> lines) {
-        final int[] lineCounter = {0}; // needs to be an array so it can be modified inside the lambda
+        final int[] lineCounter = { 0 }; // needs to be an array so it can be modified inside the lambda
         lines.forEach(line -> {
             lineCounter[0]++;
             emitParsedItem(SVImporter.processLine(line), lineCounter[0]);
@@ -102,7 +161,7 @@ public class SVImporter implements Importer {
     @Override
     public void runImport() {
         if (file != null) {
-            try (BufferedReader reader = file.createReader()) { 
+            try (BufferedReader reader = file.createReader()) {
                 importStream(reader.lines());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
