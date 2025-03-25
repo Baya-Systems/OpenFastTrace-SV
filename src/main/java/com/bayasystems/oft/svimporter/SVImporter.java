@@ -52,11 +52,12 @@ public class SVImporter implements Importer {
         this.listener = Objects.requireNonNull(listener);
     }
 
-    public record ParsedItem(SpecificationItemId covered_id, SpecificationItemId id, String[] needed_types, String title,
+    public record ParsedItem(SpecificationItemId covered_id, SpecificationItemId generated_id, String[] needed_types,
+            String title,
             String description) {
         public ParsedItem {
             Objects.requireNonNull(covered_id, "Covered item ID must not be null");
-            Objects.requireNonNull(id, "Specification item ID must not be null");
+            Objects.requireNonNull(generated_id, "Specification item ID must not be null");
         }
     }
 
@@ -83,7 +84,7 @@ public class SVImporter implements Importer {
             return null;
         }
 
-        final String covered_artifact = parts[0].trim();
+        final String covering_artifact = parts[0].trim();
         final String[] parts2 = parts[1].split("<<");
         String spec_object = null;
         String[] needed_types = null;
@@ -97,21 +98,16 @@ public class SVImporter implements Importer {
         }
 
         // 2. parse components
-        final SpecificationItemId specificationId = SpecificationItemId.parseId(spec_object);
+        final SpecificationItemId coveredId = SpecificationItemId.parseId(spec_object);
 
-        final String[] ca_parts = covered_artifact.split("~");
-        SpecificationItemId coveredId = null;
+        final String[] ca_parts = covering_artifact.split("~");
+        SpecificationItemId generatedId = null;
         if (ca_parts.length == 1) {
-            coveredId = SpecificationItemId.createId(ca_parts[0], specificationId.getName(),
-                    specificationId.getRevision());
-        } else if (ca_parts.length == 2) {
-            coveredId = SpecificationItemId.createId(ca_parts[0], ca_parts[1], specificationId.getRevision());
+            generatedId = SpecificationItemId.createId(ca_parts[0], coveredId.getName(), -1);
         } else if (ca_parts.length == 3) {
-            coveredId = SpecificationItemId.createId(ca_parts[1], ca_parts[0], Integer.parseInt(ca_parts[2]));
+            generatedId = SpecificationItemId.createId(ca_parts[0], ca_parts[1], Integer.parseInt(ca_parts[2]));
         } else {
-            // throw IllegalArgumentException("Invalid covered artifact: " +
-            // covered_artifact + "; must have one '~' separator");
-            return null;
+            throw new IllegalArgumentException("Invalid covered artifact: " + covering_artifact + "; must have one or three '~' separators");
         }
 
         final Matcher titleDescMatcher = TITLE_DESCRIPTION_PATTERN.matcher(titleAndDesc);
@@ -124,7 +120,7 @@ public class SVImporter implements Importer {
             title = titleAndDesc;
         }
 
-        return new ParsedItem(coveredId, specificationId, needed_types, title, description);
+        return new ParsedItem(coveredId, generatedId, needed_types, title, description);
     }
 
     private void emitParsedItem(final ParsedItem item, int lineNumber) {
@@ -132,7 +128,7 @@ public class SVImporter implements Importer {
             return;
         }
         listener.beginSpecificationItem();
-        listener.setId(item.id);
+        listener.setId(item.generated_id);
         listener.addCoveredId(item.covered_id);
         for (String c : item.needed_types)
             listener.addNeededArtifactType(c);
