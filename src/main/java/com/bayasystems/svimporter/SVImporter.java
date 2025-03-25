@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.itsallcode.openfasttrace.api.core.SpecificationItemId;
 import org.itsallcode.openfasttrace.api.importer.ImportEventListener;
@@ -20,10 +21,9 @@ public class SVImporter implements Importer {
 
     private static final Pattern REQ_PATTERN = Pattern
             .compile(
-                    "\\s*//\\s*\\[(req|dsn|impl|utest|itest|stest)\\s*->\\s*(req|dsn|impl|utest|itest|stest)~([\\w\\.\\-]+)~(\\d+)\\]\\s*(.*?)$");
+                    "\\s*//\\s*\\[([^]]*)\\]\\s*(.*?)$");
 
-    // private static final Pattern TITLE_DESCRIPTION_PATTERN = Pattern
-    // .compile("([^:]+):\\s*(.*)");
+    private static final Pattern TITLE_DESCRIPTION_PATTERN = Pattern.compile("([^:]+):\\s*(.*)");
 
     // private static final Pattern COVERS_PATTERN = Pattern
     // .compile("\\s*//\\s*\\[covers\\s+([\\w\\.\\-\\~]+(?:,\\s*[\\w\\.\\-\\~]+)*)\\]\\s*$");
@@ -49,43 +49,66 @@ public class SVImporter implements Importer {
         this.listener = Objects.requireNonNull(listener);
     }
 
-    static public SpecificationItemId processLine(String line) {
+    record ParsedItem(SpecificationItemId id, String title, String description) {
+    }
+
+    static public ParsedItem processLine(String line) {
         // Parse the line and create a new SVSpecificationItem
         final Matcher reqMatcher = REQ_PATTERN.matcher(line);
         if (reqMatcher.matches()) {
-            final String artifactType = reqMatcher.group(2);
-            final String name = reqMatcher.group(3);
-            final int revision = Integer.parseInt(reqMatcher.group(4));
-            // final String titleAndDesc = reqMatcher.group(4);
-            return SpecificationItemId.createId(artifactType, name, revision);
+            final String body = reqMatcher.group(1);
+            final String titleAndDesc = reqMatcher.group(2); 
+            SpecificationItemId si = SpecificationItemId.parseId(body);
+            final Matcher titleDescMatcher = TITLE_DESCRIPTION_PATTERN.matcher(titleAndDesc);
+            if (titleDescMatcher.matches()) {
+                final String title = titleDescMatcher.group(1);
+                final String description = titleDescMatcher.group(2);
+                return new ParsedItem(si, title, description);
+            } else {
+                return new ParsedItem(si, null, titleAndDesc);
+            }
         }
         return null;
+    }
+
+    private void emitParsedItem(final ParsedItem item, int lineNumber) {
+        if (item == null) {
+            return;
+        }
+        listener.beginSpecificationItem();
+        listener.setId(item.id);
+        if (file != null) {
+            listener.setLocation(file.getPath(), lineNumber);
+        } else {
+            listener.setLocation("unknown", lineNumber);
+        }
+        if (item.title != null) {
+            listener.setTitle(item.title);
+        }
+        if (item.description != null) {
+            listener.appendDescription(item.description);
+        }
+        listener.endSpecificationItem();
+    }
+
+    private void importStream(Stream<String> lines) {
+        final int[] lineCounter = {0}; // needs to be an array so it can be modified inside the lambda
+        lines.forEach(line -> {
+            lineCounter[0]++;
+            emitParsedItem(SVImporter.processLine(line), lineCounter[0]);
+        });
     }
 
     @Override
     public void runImport() {
         if (file != null) {
-            try (BufferedReader reader = file.createReader()) {
-                String line;
-                int lineNumber = 0;
-                while ((line = reader.readLine()) != null) {
-                    lineNumber++;
-                    final SpecificationItemId id = SVImporter.processLine(line);
-                    if (id != null) {
-                        listener.setLocation(file.getPath(), lineNumber);
-                        listener.addCoveredId(id);
-                    }
-                }
+            try (BufferedReader reader = file.createReader()) { 
+                importStream(reader.lines());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         } else {
-            for (String line : content.split("\\r?\\n")) {
-                final SpecificationItemId id = SVImporter.processLine(line);
-                if (id != null) {
-                    listener.addCoveredId(id);
-                }
-            }
+            importStream(content.lines());
         }
     }
 
