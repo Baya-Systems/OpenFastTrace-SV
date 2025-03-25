@@ -1,4 +1,4 @@
-package com.bayasystems.svimporter;
+package com.bayasystems.oft.svimporter;
 
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -6,7 +6,7 @@ import java.util.logging.Logger;
 import org.itsallcode.openfasttrace.api.importer.*;
 import org.itsallcode.openfasttrace.api.importer.input.InputFile;
 
-import com.bayasystems.svimporter.util.SVConstants;
+import com.bayasystems.oft.svimporter.util.SVConstants;
 
 public class SVImporterPlugin extends ImporterFactory {
 

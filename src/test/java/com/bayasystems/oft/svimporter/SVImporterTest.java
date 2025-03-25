@@ -1,8 +1,8 @@
-package com.bayasystems.svimporter;
+package com.bayasystems.oft.svimporter;
 
 import org.junit.jupiter.api.Test;
 
-import com.bayasystems.svimporter.SVImporter.ParsedItem;
+import com.bayasystems.oft.svimporter.SVImporter.ParsedItem;
 
 import org.itsallcode.openfasttrace.api.core.SpecificationItemId;
 import org.itsallcode.openfasttrace.api.importer.ImportEventListener;

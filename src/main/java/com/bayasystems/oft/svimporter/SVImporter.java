@@ -1,4 +1,4 @@
-package com.bayasystems.svimporter;
+package com.bayasystems.oft.svimporter;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,19 +40,19 @@ public class SVImporter implements Importer {
     // private static final Pattern TAGS_PATTERN = Pattern
     // .compile("\\s*//\\s*\\[tags\\s+([\\w\\.\\-]+(?:,\\s*[\\w\\.\\-]+)*)\\]\\s*$");
 
-    SVImporter(final String content, final ImportEventListener listener) {
+    public SVImporter(final String content, final ImportEventListener listener) {
         this.content = Objects.requireNonNull(content);
         this.file = null;
         this.listener = Objects.requireNonNull(listener);
     }
 
-    SVImporter(final InputFile file, final ImportEventListener listener) {
+    public SVImporter(final InputFile file, final ImportEventListener listener) {
         this.content = null;
         this.file = Objects.requireNonNull(file);
         this.listener = Objects.requireNonNull(listener);
     }
 
-    record ParsedItem(SpecificationItemId covered_id, SpecificationItemId id, String[] needed_types, String title,
+    public record ParsedItem(SpecificationItemId covered_id, SpecificationItemId id, String[] needed_types, String title,
             String description) {
         public ParsedItem {
             Objects.requireNonNull(covered_id, "Covered item ID must not be null");
