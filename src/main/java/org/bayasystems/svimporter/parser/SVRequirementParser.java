@@ -3,6 +3,7 @@ package org.bayasystems.svimporter.parser;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.bayasystems.svimporter.model.SVSpecificationItem;
 import org.itsallcode.openfasttrace.api.core.*;
 
 public class SVRequirementParser {
@@ -24,10 +25,10 @@ public class SVRequirementParser {
         private static final Pattern TAGS_PATTERN = Pattern
                         .compile("\\s*//\\s*\\[tags\\s+([\\w\\.\\-]+(?:,\\s*[\\w\\.\\-]+)*)\\]\\s*$");
 
-        public SVSpecificationItem parseLine(final String line) {
+        public SVSpecificationItem parseLine(final String line, final Location location) {
                 final Matcher reqMatcher = REQ_PATTERN.matcher(line);
                 if (reqMatcher.matches()) {
-                        return parseRequirement(reqMatcher);
+                        return parseRequirement(reqMatcher, location);
                 }
 
                 // Parse other SystemVerilog requirement syntax like covers, depends, etc.
@@ -35,7 +36,7 @@ public class SVRequirementParser {
                 return null;
         }
 
-        private SVSpecificationItem parseRequirement(final Matcher matcher) {
+        private SVSpecificationItem parseRequirement(final Matcher matcher, final Location location) {
                 final String artifactType = matcher.group(1);
                 final String name = matcher.group(2);
                 final int revision = Integer.parseInt(matcher.group(3));
@@ -51,8 +52,6 @@ public class SVRequirementParser {
                         title = titleDescMatcher.group(1).trim();
                         description = titleDescMatcher.group(2).trim();
                 }
-
-                final Location location = Location.create(null, null); // Add file info and line numbers
 
                 return new SVSpecificationItem(id, title, description, location);
         }
