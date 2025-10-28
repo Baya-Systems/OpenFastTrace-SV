@@ -14,6 +14,8 @@ import org.itsallcode.openfasttrace.api.importer.ImportEventListener;
 import org.itsallcode.openfasttrace.api.importer.Importer;
 import org.itsallcode.openfasttrace.api.importer.input.InputFile;
 
+import com.bayasystems.oft.svimporter.util.SVImporterConfig;
+
 public class SVImporter implements Importer {
 
     private static final Logger LOG = Logger
@@ -52,11 +54,31 @@ public class SVImporter implements Importer {
         this.processTitleAndDesc = processTitleAndDesc;
     }
 
+    /**
+     * Create an SVImporter with configuration from system properties.
+     * 
+     * @param content the content to parse
+     * @param listener the import event listener
+     */
+    public SVImporter(final String content, final ImportEventListener listener) {
+        this(content, listener, SVImporterConfig.isProcessTitleDescriptionEnabled());
+    }
+
     public SVImporter(final InputFile file, final ImportEventListener listener, boolean processTitleAndDesc) {
         this.content = null;
         this.file = Objects.requireNonNull(file);
         this.listener = Objects.requireNonNull(listener);
         this.processTitleAndDesc = processTitleAndDesc;
+    }
+
+    /**
+     * Create an SVImporter with configuration from system properties.
+     * 
+     * @param file the input file
+     * @param listener the import event listener
+     */
+    public SVImporter(final InputFile file, final ImportEventListener listener) {
+        this(file, listener, SVImporterConfig.isProcessTitleDescriptionEnabled());
     }
 
     public record ParsedItem(SpecificationItemId covered_id, SpecificationItemId generated_id, String[] needed_types,

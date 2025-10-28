@@ -27,6 +27,15 @@ The SystemVerilog Importer Plugin is designed to facilitate the importing and ex
 - To use the importer, integrate it into your application by registering the `SVImporterPlugin` with the appropriate service.
 - For exporting data, utilize the `SVExporterPlugin` to manage export requests and format the output as needed.
 
+## Configuration
+The plugin supports configuration through system properties using the `oft.sv` prefix. For example, you can enable title and description processing from SystemVerilog comments:
+
+```bash
+java -Doft.sv.process_title_description=true -jar your-application.jar
+```
+
+For detailed configuration options and examples, see [CONFIGURATION.md](CONFIGURATION.md).
+
 ## Contributing
 Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.
 
