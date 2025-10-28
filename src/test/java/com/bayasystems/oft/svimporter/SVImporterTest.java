@@ -43,6 +43,18 @@ public class SVImporterTest {
         // Test processing a comment without requirements
         String commentLine = "// This is just a comment";
         assertNull(SVImporter.processLine(commentLine), "Should return null for comments without requirement syntax");
+
+        String reqLine2 = "// [req~my-feature~2->dsn~feature-id~1] This is a requirement new id and version";
+        ParsedItem pi2 = SVImporter.processLine(reqLine2);
+        assertNotNull(pi2, "Should recognize a valid requirement with new id and version");
+        SpecificationItemId gid2 = pi2.generated_id();
+        assertEquals("req", gid2.getArtifactType(), "Should extract the correct artifact type");
+        assertEquals("my-feature", gid2.getName(), "Should extract the correct name for the generated SpecificationItemId");
+        assertEquals(2, gid2.getRevision(), "Should extract the correct revision");
+        SpecificationItemId id2 = pi2.covered_id();
+        assertEquals("dsn", id2.getArtifactType(), "Should extract the correct artifact type");
+        assertEquals("feature-id", id2.getName(), "Should extract the correct requirement name");
+        assertEquals(1, id2.getRevision(), "Should extract the correct revision");
     }
 
     @Test
