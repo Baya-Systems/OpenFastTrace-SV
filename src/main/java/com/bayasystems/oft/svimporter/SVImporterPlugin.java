@@ -35,7 +35,7 @@ public class SVImporterPlugin extends ImporterFactory {
         }
         LOG.finest(() -> "Creating importer for file " + file);
 
-        return new SVImporter(Objects.requireNonNull(file), Objects.requireNonNull(listener));
+        return new SVImporter(Objects.requireNonNull(file), Objects.requireNonNull(listener), false);
     }
 
 }

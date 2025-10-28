@@ -22,6 +22,7 @@ public class SVImporter implements Importer {
     private final InputFile file;
     private final String content;
     private final ImportEventListener listener;
+    private final boolean processTitleAndDesc;
 
     private static final Pattern CONTEXT_PATTERN = Pattern
             .compile(
@@ -44,16 +45,18 @@ public class SVImporter implements Importer {
     // private static final Pattern TAGS_PATTERN = Pattern
     // .compile("\\s*//\\s*\\[tags\\s+([\\w\\.\\-]+(?:,\\s*[\\w\\.\\-]+)*)\\]\\s*$");
 
-    public SVImporter(final String content, final ImportEventListener listener) {
+    public SVImporter(final String content, final ImportEventListener listener, boolean processTitleAndDesc) {
         this.content = Objects.requireNonNull(content);
         this.file = null;
         this.listener = Objects.requireNonNull(listener);
+        this.processTitleAndDesc = processTitleAndDesc;
     }
 
-    public SVImporter(final InputFile file, final ImportEventListener listener) {
+    public SVImporter(final InputFile file, final ImportEventListener listener, boolean processTitleAndDesc) {
         this.content = null;
         this.file = Objects.requireNonNull(file);
         this.listener = Objects.requireNonNull(listener);
+        this.processTitleAndDesc = processTitleAndDesc;
     }
 
     public record ParsedItem(SpecificationItemId covered_id, SpecificationItemId generated_id, String[] needed_types,
@@ -65,7 +68,7 @@ public class SVImporter implements Importer {
         }
     }
 
-    static public ParsedItem processLine(String line) {
+    static public ParsedItem processLine(String line, boolean processTitleAndDesc) {
         // Parse the line and create a new SVSpecificationItem
         final Matcher reqMatcher = CONTEXT_PATTERN.matcher(line);
         if (!reqMatcher.matches())
@@ -110,17 +113,20 @@ public class SVImporter implements Importer {
         } else if (ca_parts.length == 3) {
             generatedId = SpecificationItemId.createId(ca_parts[0], ca_parts[1], Integer.parseInt(ca_parts[2]));
         } else {
-            throw new IllegalArgumentException("Invalid covered artifact: " + covering_artifact + "; must have one or three '~' separators");
+            throw new IllegalArgumentException(
+                    "Invalid covered artifact: " + covering_artifact + "; must have one or three '~' separators");
         }
 
-        final Matcher titleDescMatcher = TITLE_DESCRIPTION_PATTERN.matcher(titleAndDesc);
         String title = null;
         String description = null;
-        if (titleDescMatcher.matches()) {
-            title = titleDescMatcher.group(1);
-            description = titleDescMatcher.group(2);
-        } else {
-            title = titleAndDesc;
+        if (processTitleAndDesc) {
+            final Matcher titleDescMatcher = TITLE_DESCRIPTION_PATTERN.matcher(titleAndDesc);
+            if (titleDescMatcher.matches()) {
+                title = titleDescMatcher.group(1);
+                description = titleDescMatcher.group(2);
+            } else {
+                title = titleAndDesc;
+            }
         }
 
         return new ParsedItem(coveredId, generatedId, needed_types, title, description);
@@ -130,17 +136,21 @@ public class SVImporter implements Importer {
         if (item == null) {
             return;
         }
-        logItem(lineNumber, item);
+        final String needs = item.needed_types.length == 0 ? ""
+                : ", needs artifact types " + String.join(", ", item.needed_types);
+        LOG.finest(() -> "File " + this.file + ":" + lineNumber + ": found '" + item.generated_id
+                + "' covering id '" + item.covered_id + "'" + needs);
+
         listener.beginSpecificationItem();
-        listener.setId(item.generated_id);
-        listener.addCoveredId(item.covered_id);
-        for (String c : item.needed_types)
-            listener.addNeededArtifactType(c);
         if (file != null) {
             listener.setLocation(file.getPath(), lineNumber);
         } else {
             listener.setLocation("unknown", lineNumber);
         }
+        listener.setId(item.generated_id);
+        listener.addCoveredId(item.covered_id);
+        for (String c : item.needed_types)
+            listener.addNeededArtifactType(c);
         if (item.title != null) {
             listener.setTitle(item.title);
         }
@@ -150,22 +160,11 @@ public class SVImporter implements Importer {
         listener.endSpecificationItem();
     }
 
-    private void logItem(final int lineNumber, final ParsedItem item) {
-        if (item.needed_types.length == 0) {
-            LOG.finest(() -> "File " + this.file + ":" + lineNumber + ": found '" + item.generated_id
-                    + "' covering id '" + item.covered_id);
-        } else {
-            LOG.finest(() -> "File " + this.file + ":" + lineNumber + ": found '" + item.generated_id
-                    + "' covering id '" + item.covered_id + "', needs artifact types "
-                    + item.needed_types);
-        }
-    }
-
     private void importStream(Stream<String> lines) {
         final int[] lineCounter = { 0 }; // needs to be an array so it can be modified inside the lambda
         lines.forEach(line -> {
             lineCounter[0]++;
-            emitParsedItem(SVImporter.processLine(line), lineCounter[0]);
+            emitParsedItem(SVImporter.processLine(line, processTitleAndDesc), lineCounter[0]);
         });
     }
 
