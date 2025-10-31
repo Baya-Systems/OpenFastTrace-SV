@@ -113,7 +113,7 @@ public class SVImporter implements Importer {
         }
 
         final String covering_artifact = parts[0].trim();
-        final String[] parts2 = parts[1].split("<<");
+        final String[] parts2 = parts[1].split(">>");
         String spec_object = null;
         String[] needed_types = null;
 
@@ -123,6 +123,9 @@ public class SVImporter implements Importer {
         } else if (parts2.length == 2) {
             spec_object = parts2[0].trim();
             needed_types = parts2[1].split(",");
+            for (int i = 0; i < needed_types.length; i++) {
+                needed_types[i] = needed_types[i].trim();
+            }
         }
 
         // 2. parse components

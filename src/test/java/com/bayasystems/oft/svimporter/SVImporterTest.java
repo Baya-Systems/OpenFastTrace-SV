@@ -57,6 +57,23 @@ public class SVImporterTest {
         assertEquals("dsn", id2.getArtifactType(), "Should extract the correct artifact type");
         assertEquals("feature-id", id2.getName(), "Should extract the correct requirement name");
         assertEquals(1, id2.getRevision(), "Should extract the correct revision");
+
+        String line2 = "// [utest->arch~cashmere.90090.sf-and-cache-protection.data-and-tag-ecc~1 >> upass]";
+        ParsedItem pi3 = SVImporter.processLine(line2, true);
+
+        assertNotNull(pi3, "Should recognize a valid unit test requirement");
+        SpecificationItemId gid3 = pi3.generated_id();
+        assertEquals("utest", gid3.getArtifactType(), "Should extract the correct artifact type");
+        assertNotNull(gid3.getName(), "Should have some valid name for the generated SpecificationItemId");
+        assertEquals(-1, gid3.getRevision(), "Should extract the correct revision");
+        SpecificationItemId id3 = pi3.covered_id();
+        assertEquals("arch", id3.getArtifactType(), "Should extract the correct artifact type");
+        assertEquals("cashmere.90090.sf-and-cache-protection.data-and-tag-ecc", id3.getName(),
+                "Should extract the correct requirement name");
+        assertEquals(1, id3.getRevision(), "Should extract the correct revision");
+
+        String[] expected_needs = { "upass" };
+        assertArrayEquals(expected_needs, pi3.needed_types());
     }
 
     @Test
