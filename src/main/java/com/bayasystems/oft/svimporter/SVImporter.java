@@ -134,9 +134,13 @@ public class SVImporter implements Importer {
         final String[] ca_parts = covering_artifact.split("~");
         SpecificationItemId generatedId = null;
         if (ca_parts.length == 1) {
-            generatedId = SpecificationItemId.createId(ca_parts[0], coveredId.getName(), -1);
+            final String type = ca_parts[0];
+            generatedId = SpecificationItemId.createId(type, coveredId.getName(), coveredId.getRevision());
         } else if (ca_parts.length == 3) {
-            generatedId = SpecificationItemId.createId(ca_parts[0], ca_parts[1], Integer.parseInt(ca_parts[2]));
+            final String type = ca_parts[0];
+            final String name = ca_parts[1].isBlank() ? coveredId.getName() : ca_parts[1];
+            final int revision = Integer.parseInt(ca_parts[2]);
+            generatedId = SpecificationItemId.createId(type, name, revision);
         } else {
             throw new IllegalArgumentException(
                     "Invalid covered artifact: " + covering_artifact + "; must have one or three '~' separators");
