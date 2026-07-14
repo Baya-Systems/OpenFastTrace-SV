@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import org.itsallcode.openfasttrace.api.core.SpecificationItemId;
 import org.itsallcode.openfasttrace.api.importer.ImportEventListener;
 import org.itsallcode.openfasttrace.api.importer.Importer;
+import org.itsallcode.openfasttrace.api.importer.ImporterException;
 import org.itsallcode.openfasttrace.api.importer.input.InputFile;
 
 import com.bayasystems.oft.svimporter.util.SVImporterConfig;
@@ -191,9 +192,15 @@ public class SVImporter implements Importer {
 
     private void importStream(Stream<String> lines) {
         final int[] lineCounter = { 0 }; // needs to be an array so it can be modified inside the lambda
+        final String location = file != null ? file.getPath() : "<inline content>";
         lines.forEach(line -> {
             lineCounter[0]++;
-            emitParsedItem(SVImporter.processLine(line, processTitleAndDesc), lineCounter[0]);
+            try {
+                emitParsedItem(SVImporter.processLine(line, processTitleAndDesc), lineCounter[0]);
+            } catch (RuntimeException e) {
+                throw new ImporterException(
+                        "Failed to parse trace tag at " + location + ":" + lineCounter[0] + ": " + line.trim(), e);
+            }
         });
     }
 

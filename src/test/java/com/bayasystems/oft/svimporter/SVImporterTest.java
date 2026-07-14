@@ -6,6 +6,7 @@ import com.bayasystems.oft.svimporter.SVImporter.ParsedItem;
 
 import org.itsallcode.openfasttrace.api.core.SpecificationItemId;
 import org.itsallcode.openfasttrace.api.importer.ImportEventListener;
+import org.itsallcode.openfasttrace.api.importer.ImporterException;
 import org.itsallcode.openfasttrace.api.importer.input.RealFileInput;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -120,5 +121,22 @@ public class SVImporterTest {
 
         SpecificationItemId c_id = SpecificationItemId.createId("req", "id", 1);
         verify(listener, times(1)).addCoveredId(c_id);
+    }
+
+    @Test
+    void testRunImportWrapsParseErrorWithFileAndLineContext() {
+        // Line 2 has a malformed covered ID (only one '~' instead of two), which
+        // SpecificationItemId.parseId rejects.
+        String content = "// [dsn->req~id~1] first line\n"
+                + "// [dsn->req~badid] second line\n";
+
+        ImportEventListener listener = mock(ImportEventListener.class);
+        SVImporter importer = new SVImporter(content, listener, false);
+
+        ImporterException ex = assertThrows(ImporterException.class, importer::runImport,
+                "Should wrap the underlying parse failure");
+        assertTrue(ex.getMessage().contains(":2:"), "Message should include the 1-based line number");
+        assertTrue(ex.getMessage().contains("req~badid"), "Message should include the offending source line");
+        assertNotNull(ex.getCause(), "Original parsing exception should be preserved as the cause");
     }
 }
